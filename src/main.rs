@@ -1,19 +1,12 @@
-use std::f32::consts::PI;
-
 use bevy::{
     prelude::*,
     render::{
         render_asset::RenderAssetUsages,
-        render_resource::{
-            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-        },
-        texture::ImageSampler,
-        view::RenderLayers, // texture::{ImageFormat, ImageSampler, ImageType},
+        render_resource::{Extent3d, TextureDimension},
     },
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
 
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use gpca::{
     dynamics::{implementations::cyclic::CyclicAutomaton, local::LocalDynamic},
     spaces::{
@@ -22,11 +15,9 @@ use gpca::{
     },
     system::dynamical_system::DynamicalSystem,
     third::wgpu::{create_gpu_device, GpuDevice},
-    // third::wgpu::create_gpu_device,
 };
 
-// const X_EXTENT: f32 = 600.;
-
+// Tipos de alias para el sistema dinámico
 type MyHyperGraph = HyperGraphHeap<DiscreteState, (), (u32, u32)>;
 type MyDynamicalSystem = DynamicalSystem<MyHyperGraph, CyclicAutomaton, DiscreteState, ()>;
 
@@ -45,17 +36,14 @@ struct GPUContext {
 
 impl CurrentGPCA {
     fn new() -> Self {
-        const W: u32 = 1024;
-        const H: u32 = 1024;
-
-        const STATES: u32 = 4;
+        const W: u32 = 2048;
+        const H: u32 = 2048;
+        const STATES: u32 = 6;
         const THRESH: u32 = 2;
 
         let mem = DiscreteState::filled_vector(W * H, STATES);
         let space = HyperGraphHeap::new_grid(&mem, W, H, ());
-
         let dynamic = CyclicAutomaton::new(STATES, THRESH);
-
         let model = DynamicalSystem::new(Box::new(space), Box::new(dynamic));
 
         Self { model }
@@ -63,22 +51,21 @@ impl CurrentGPCA {
 }
 
 fn main() {
-    // let mut app = ;
-
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(EguiPlugin)
+        // .add_plugins(EguiPlugin)
+        .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, ui_example_system)
+        // .add_systems(Update, ui_example_system)
         .add_systems(Update, render_image)
         .run();
 }
 
-fn ui_example_system(mut contexts: EguiContexts) {
-    egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
-        ui.label("world");
-    });
-}
+// fn ui_example_system(mut contexts: EguiContexts) {
+//     egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
+//         ui.label("world");
+//     });
+// }
 
 fn render_image(
     gpu: Res<GPUContext>,
@@ -110,13 +97,14 @@ fn render_image(
         })
         .collect::<Vec<u8>>();
 
+    let (w, h) = context.model.space().payload();
+
     let size = Extent3d {
-        width: 1024,
-        height: 1024,
+        width: *w,
+        height: *h,
         depth_or_array_layers: 1,
     };
 
-    // This is the texture that will be rendered to.
     let image = Image::new(
         size,
         TextureDimension::D2,
@@ -127,23 +115,6 @@ fn render_image(
 
     let image_handle = images.add(image);
 
-    // let first_pass_layer = RenderLayers::layer(1);
-
-    // commands.spawn((
-    //     Camera3dBundle {
-    //         camera: Camera {
-    //             order: -1,
-    //             target: image_handle.clone().into(),
-    //             clear_color: Color::WHITE.into(),
-    //             ..default()
-    //         },
-    //         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 15.0))
-    //             .looking_at(Vec3::ZERO, Vec3::Y),
-    //         ..default()
-    //     },
-    //     first_pass_layer,
-    // ));
-
     let material_handle = materials.add(StandardMaterial {
         base_color_texture: Some(image_handle),
         reflectance: 0.02,
@@ -151,101 +122,40 @@ fn render_image(
         ..default()
     });
 
-    // let cube_size = 4.0;
-
-    let torus_handle = meshes.add(Torus::new(3.0, 6.0));
+    // let torus_handle = meshes.add(Mesh::from(Torus::new(2.0, 5.0)));
+    let plane_handle = meshes.add(Mesh::from(Plane3d::new(
+        Vec3::Z,
+        Vec2::new(*w as f32 / 100.0, *h as f32 / 100.0),
+    )));
 
     commands.spawn((
         PbrBundle {
-            mesh: torus_handle,
-            material: material_handle,
-            transform: Transform::from_xyz(0.0, 0.0, 1.5)
-                .with_rotation(Quat::from_rotation_x(-PI / 5.0)),
-            ..default()
+            mesh: plane_handle.clone(),
+            material: material_handle.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..Default::default()
         },
         MainPassCube,
     ));
 }
 
-fn setup(
-    mut commands: Commands,
-    // mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<ColorMaterial>>,
-) {
+fn setup(mut commands: Commands) {
     commands.insert_resource(CurrentGPCA::new());
+
     commands.insert_resource(GPUContext {
         device: create_gpu_device(),
     });
 
-    commands.spawn((
-        PointLightBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
-            ..default()
-        },
-        RenderLayers::layer(0).with(1),
-    ));
-
-    // The main pass camera.
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
+    commands.spawn(PointLightBundle {
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 20.0)),
         ..default()
     });
 
-    // commands.spawn(Camera2dBundle::default());
-
-    // let shapes = [
-    //     Mesh2dHandle(meshes.add(Circle { radius: 35.0 })),
-    //     Mesh2dHandle(meshes.add(Ellipse::new(25.0, 50.0))),
-    //     Mesh2dHandle(meshes.add(Capsule2d::new(25.0, 50.0))),
-    //     Mesh2dHandle(meshes.add(Rectangle::new(50.0, 100.0))),
-    //     Mesh2dHandle(meshes.add(RegularPolygon::new(50.0, 6))),
-    //     Mesh2dHandle(meshes.add(Triangle2d::new(
-    //         Vec2::Y * 50.0,
-    //         Vec2::new(-50.0, -50.0),
-    //         Vec2::new(50.0, -50.0),
-    //     ))),
-    // ];
-
-    // let num_shapes = shapes.len();
-
-    // for (i, shape) in shapes.into_iter().enumerate() {
-    //     // Distribute colors evenly across the rainbow.
-    //     let color = Color::hsl(360. * i as f32 / num_shapes as f32, 0.95, 0.7);
-
-    //     commands.spawn(MaterialMesh2dBundle {
-    //         mesh: shape,
-    //         material: materials.add(color),
-    //         transform: Transform::from_xyz(
-    //             // Distribute shapes from -X_EXTENT to +X_EXTENT.
-    //             -X_EXTENT / 2. + i as f32 / (num_shapes - 1) as f32 * X_EXTENT,
-    //             0.0,
-    //             0.0,
-    //         ),
-    //         ..default()
-    //     });
-    // }
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 0.0, 20.0).looking_at(Vec3::ZERO, Vec3::Y),
+            ..Default::default()
+        },
+        PanOrbitCamera::default(),
+    ));
 }
-
-// async fn ff() {
-//     const W: u32 = 2048;
-//     const H: u32 = 1024;
-
-//     const STATES: u32 = 4;
-//     const THRESH: u32 = 2;
-
-//     let _device = create_gpu_device();
-
-//     let mem = DiscreteState::filled_vector(W * H, STATES);
-//     let space = HyperGraphHeap::new_grid(&mem, W, H, ());
-
-//     let dynamic = CyclicAutomaton::new(STATES, THRESH);
-
-//     let mut system = DynamicalSystem::new(Box::new(space), Box::new(dynamic));
-
-//     for _ in tqdm!(0..500) {
-//         system.compute_sync_wgpu(&_device);
-//         // system.compute_sync();
-//     }
-
-//     save_space_as_image(&system, colorous::PLASMA);
-// }
