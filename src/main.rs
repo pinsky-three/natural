@@ -63,14 +63,3 @@ fn setup(
         });
     }
 }
-
-// fn blink_system(time: Res<Time>, mut query: Query<(&mut Transform, &Handle<Mesh>)>) {
-//     println!("blink");
-//     for (mut transform, _mesh) in query.iter_mut() {
-//         // Use sinusoidal function to oscillate scale over time
-//         let scale = 1.0 + (time.elapsed_seconds().sin() * 0.1);
-//         transform.scale = Vec3::splat(scale);
-
-//         println!("transform: {:?}", transform);
-//     }
-// }
