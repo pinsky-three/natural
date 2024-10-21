@@ -38,10 +38,10 @@ struct GPUContext {
 
 impl CurrentGPCA {
     fn new() -> Self {
-        const W: u32 = 512;
-        const H: u32 = 512;
+        const W: u32 = 2048;
+        const H: u32 = 2048;
 
-        const STATES: u32 = 5;
+        const STATES: u32 = 6;
         const THRESH: u32 = 2;
 
         let mem = DiscreteState::filled_vector(W * H, STATES);
@@ -183,10 +183,9 @@ fn setup(
 
     let material_handle = materials.add(StandardMaterial {
         base_color_texture: Some(image_handle.clone()),
-        reflectance: 0.02,
-        unlit: false,
-
-        ..default()
+        reflectance: 0.85,
+        unlit: true,
+        ..Default::default()
     });
 
     // let torus_handle = meshes.add(Mesh::from(Torus::new(2.0, 5.0)));
