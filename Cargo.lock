@@ -2398,9 +2398,9 @@ dependencies = [
 
 [[package]]
 name = "gpca"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a6179b26f6099e9191a8d594d1789af65f6311b7db280cfda4b89970c9b692a"
+checksum = "e1cc0b614d18d122fe830ac27c0bea21057c1b164d9bae0ea9cc0b228c7b2371"
 dependencies = [
  "bytemuck",
  "colorous",
