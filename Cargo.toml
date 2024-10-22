@@ -13,4 +13,5 @@ bevy_egui = "0.30.0"
 bevy = "0.14.2"
 bevy_panorbit_camera = "0.19.3"
 
-gpca = "0.1.3"
+gpca = "0.1.4"
+colorous = "1.0.14"

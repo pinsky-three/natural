@@ -6,6 +6,7 @@ use bevy::{
     },
 };
 
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use gpca::{
     dynamics::{implementations::cyclic::CyclicAutomaton, local::LocalDynamic},
@@ -17,7 +18,6 @@ use gpca::{
     third::wgpu::{create_gpu_device, GpuDevice},
 };
 
-// Tipos de alias para el sistema dinámico
 type MyHyperGraph = HyperGraphHeap<DiscreteState, (), (u32, u32)>;
 type MyDynamicalSystem = DynamicalSystem<MyHyperGraph, CyclicAutomaton, DiscreteState, ()>;
 
@@ -36,13 +36,24 @@ struct GPUContext {
     material_handler: Option<Handle<StandardMaterial>>,
 }
 
+#[derive(Default, Resource)]
+struct UiState {
+    // label: String,
+    ca_states: u32,
+    ca_thresh: u32,
+    // painting: Painting,
+    // inverted: bool,
+    // egui_texture_handle: Option<egui::TextureHandle>,
+    // is_window_open: bool,
+}
+
 impl CurrentGPCA {
     fn new() -> Self {
-        const W: u32 = 2048;
-        const H: u32 = 2048;
+        const W: u32 = 1024;
+        const H: u32 = 1024;
 
-        const STATES: u32 = 6;
-        const THRESH: u32 = 2;
+        const STATES: u32 = 5;
+        const THRESH: u32 = 3;
 
         let mem = DiscreteState::filled_vector(W * H, STATES);
         let space = HyperGraphHeap::new_grid(&mem, W, H, ());
@@ -55,79 +66,73 @@ impl CurrentGPCA {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        // .add_plugins(EguiPlugin)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "GPCA".to_string(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }))
+        .init_resource::<UiState>()
+        .add_plugins(EguiPlugin)
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        // .add_systems(Update, ui_example_system)
+        .add_systems(Update, ui_example_system)
         // .add_systems(Update, render_image)
         .add_systems(Update, update_visualization)
         .run();
 }
 
-// fn ui_example_system(mut contexts: EguiContexts) {
-//     egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
-//         ui.label("world");
-//     });
-// }
+fn ui_example_system(mut contexts: EguiContexts, mut ui_state: ResMut<UiState>) {
+    egui::Window::new("Cyclic Cellular Automata").show(contexts.ctx_mut(), |ui| {
+        ui.label("world");
+
+        ui.horizontal(|ui| {
+            ui.label("states");
+            ui.add(egui::Slider::new(&mut ui_state.ca_states, 1..=8));
+            ui.add(egui::Slider::new(&mut ui_state.ca_thresh, 1..=8));
+        });
+    });
+}
 
 fn update_visualization(
-    // mut commands: Commands,
     mut context: ResMut<CurrentGPCA>,
-    // mut query: Query<Entity, With<MainPassCube>>,
 
-    // mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
+
+    ui_state: ResMut<UiState>,
     gpu: ResMut<GPUContext>,
 ) {
+    if ui_state.ca_states != 0 && ui_state.ca_thresh != 0 {
+        context.model.set_dynamic(Box::new(CyclicAutomaton::new(
+            ui_state.ca_states,
+            ui_state.ca_thresh,
+        )));
+    }
+
     context.model.compute_sync_wgpu(&gpu.device);
 
     let image = images.get_mut(gpu.image_handler.as_ref().unwrap()).unwrap();
-
     let dynamic = context.model.dynamic() as &dyn LocalDynamic<DiscreteState, ()>;
-
     let states = dynamic.states();
 
     let data = context
         .model
         .space_state()
         .iter()
-        .map(|x| x.state() as u8)
-        .flat_map(|v| {
+        .map(|x| colorous::VIRIDIS.eval_continuous(x.state() as f64 / states as f64))
+        .flat_map(|col| {
             [
-                ((v as u32 * 255) / states) as u8,
-                ((v as u32 * 255) / states) as u8,
-                ((v as u32 * 255) / states) as u8,
+                col.r, // ((v as u32 * 255) / states) as u8,
+                col.g, // ((v as u32 * 255) / states) as u8,
+                col.b, // ((v as u32 * 255) / states) as u8,
                 255,
             ]
         })
         .collect::<Vec<u8>>();
 
-    // println!("data[:10]={:?}", &data[..10]);
-
-    // let (w, h) = context.model.space().payload();
-
     image.data = data;
-
-    // let size = Extent3d {
-    //     width: *w,
-    //     height: *h,
-    //     depth_or_array_layers: 1,
-    // };
-
-    // let new_image = Image::new(
-    //     size,
-    //     TextureDimension::D2,
-    //     data,
-    //     bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-    //     RenderAssetUsages::default(),
-    // );
-
-    // let image_handle = images.add(new_image);
-    // gpu.image_handler = Some(image_handle.clone());
-
-    // let material_handle = materials.get_mut(MainPassCube).unwrap();
 
     materials
         .get_mut(gpu.material_handler.as_ref().unwrap())
