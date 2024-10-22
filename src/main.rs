@@ -83,14 +83,33 @@ fn main() {
         .run();
 }
 
-fn ui_example_system(mut contexts: EguiContexts, mut ui_state: ResMut<UiState>) {
+fn ui_example_system(
+    mut contexts: EguiContexts,
+    mut context: ResMut<CurrentGPCA>,
+    mut ui_state: ResMut<UiState>,
+) {
     egui::Window::new("Cyclic Cellular Automata").show(contexts.ctx_mut(), |ui| {
         ui.label("world");
 
         ui.horizontal(|ui| {
             ui.label("states");
-            ui.add(egui::Slider::new(&mut ui_state.ca_states, 1..=8));
+            ui.add(egui::Slider::new(&mut ui_state.ca_states, 1..=32));
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("threshold");
             ui.add(egui::Slider::new(&mut ui_state.ca_thresh, 1..=8));
+        });
+
+        ui.horizontal(|ui| {
+            if ui.button("Reset").clicked() {
+                context.model.set_space(Box::new(HyperGraphHeap::new_grid(
+                    &DiscreteState::filled_vector(1024 * 1024, ui_state.ca_states),
+                    1024,
+                    1024,
+                    (),
+                )));
+            }
         });
     });
 }
