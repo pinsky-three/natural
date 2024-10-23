@@ -17,6 +17,8 @@ use gpca::{
     system::dynamical_system::DynamicalSystem,
     third::wgpu::{create_gpu_device, GpuDevice},
 };
+// use rand::Rng;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 type MyHyperGraph = HyperGraphHeap<DiscreteState, (), (u32, u32)>;
 type MyDynamicalSystem = DynamicalSystem<MyHyperGraph, CyclicAutomaton, DiscreteState, ()>;
@@ -55,7 +57,11 @@ impl CurrentGPCA {
         const STATES: u32 = 5;
         const THRESH: u32 = 3;
 
-        let mem = DiscreteState::filled_vector(W * H, STATES);
+        let mem = (0..W * H)
+            .into_par_iter()
+            .map(|_| DiscreteState::from_state(STATES - 1))
+            .collect();
+
         let space = HyperGraphHeap::new_grid(&mem, W, H, ());
         let dynamic = CyclicAutomaton::new(STATES, THRESH);
         let model = DynamicalSystem::new(Box::new(space), Box::new(dynamic));
@@ -89,7 +95,7 @@ fn ui_example_system(
     mut ui_state: ResMut<UiState>,
 ) {
     egui::Window::new("Cyclic Cellular Automata").show(contexts.ctx_mut(), |ui| {
-        ui.label("world");
+        // ui.label("world");
 
         ui.horizontal(|ui| {
             ui.label("states");
@@ -102,13 +108,22 @@ fn ui_example_system(
         });
 
         ui.horizontal(|ui| {
-            if ui.button("Reset").clicked() {
-                context.model.set_space(Box::new(HyperGraphHeap::new_grid(
-                    &DiscreteState::filled_vector(1024 * 1024, ui_state.ca_states),
-                    1024,
-                    1024,
-                    (),
-                )));
+            if ui.button("reset").clicked() {
+                let dynamic = context.model.dynamic() as &dyn LocalDynamic<DiscreteState, ()>;
+                let states = dynamic.states();
+
+                // let s = ;
+
+                context.model.update_space(|mem| {
+                    mem.par_iter_mut().for_each(|x| x.set_state(states - 1));
+                });
+
+                // context.model.set_space(Box::new(HyperGraphHeap::new_grid(
+                //     &DiscreteState::filled_vector(wh, ui_state.ca_states),
+                //     w,
+                //     h,
+                //     (),
+                // )));
             }
         });
     });
@@ -130,7 +145,8 @@ fn update_visualization(
         )));
     }
 
-    context.model.compute_sync_wgpu(&gpu.device);
+    let r = tokio::runtime::Runtime::new().unwrap();
+    r.block_on(context.model.compute_sync_wgpu(&gpu.device));
 
     let image = images.get_mut(gpu.image_handler.as_ref().unwrap()).unwrap();
     let dynamic = context.model.dynamic() as &dyn LocalDynamic<DiscreteState, ()>;
@@ -160,10 +176,10 @@ fn update_visualization(
 }
 
 fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut images: ResMut<Assets<Image>>,
+    mut commands: Commands<'_, '_>,
+    mut meshes: ResMut<'_, Assets<Mesh>>,
+    mut materials: ResMut<'_, Assets<StandardMaterial>>,
+    mut images: ResMut<'_, Assets<Image>>,
 ) {
     let context = CurrentGPCA::new();
     commands.insert_resource(context.clone());
@@ -228,8 +244,12 @@ fn setup(
         MainPassCube,
     ));
 
+    let r = tokio::runtime::Runtime::new().unwrap();
+
+    let device = r.block_on(create_gpu_device());
+
     commands.insert_resource(GPUContext {
-        device: create_gpu_device(),
+        device,
         material_handler: Some(material_handle.clone()),
         image_handler: Some(image_handle.clone()),
     });

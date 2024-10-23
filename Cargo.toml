@@ -1,17 +1,20 @@
 [package]
 name = "natural"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
-[profile.release]
-opt-level = 's'
-lto = false
-codegen-units = 1
+# [profile.release]
+# opt-level = 's'
+# lto = false
+# codegen-units = 1
 
 [dependencies]
 bevy_egui = "0.30.0"
 bevy = "0.14.2"
 bevy_panorbit_camera = "0.19.3"
 
-gpca = "0.1.4"
+gpca = "0.2.0"
 colorous = "1.0.14"
+# rand = "0.8.5"
+rayon = "1.10.0"
+tokio = { version = "1.41.0", features = ["full", "rt"] }

@@ -2117,46 +2117,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "futures"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65bc07b1a8bc7c85c5f2e110c476c7389b4554ba72af57d8445ea63a576b0876"
-dependencies = [
- "futures-channel",
- "futures-core",
- "futures-executor",
- "futures-io",
- "futures-sink",
- "futures-task",
- "futures-util",
-]
-
-[[package]]
-name = "futures-channel"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dff15bf788c671c1934e366d07e30c1814a8ef514e1af724a602e8a2fbe1b10"
-dependencies = [
- "futures-core",
- "futures-sink",
-]
-
-[[package]]
 name = "futures-core"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
-
-[[package]]
-name = "futures-executor"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e28d1d997f585e54aebc3f97d39e72338912123a67330d723fdbb564d646c9f"
-dependencies = [
- "futures-core",
- "futures-task",
- "futures-util",
-]
 
 [[package]]
 name = "futures-io"
@@ -2175,47 +2139,6 @@ dependencies = [
  "futures-io",
  "parking",
  "pin-project-lite",
-]
-
-[[package]]
-name = "futures-macro"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.81",
-]
-
-[[package]]
-name = "futures-sink"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e575fab7d1e0dcb8d0c7bcf9a63ee213816ab51902e6d244a95819acacf1d4f7"
-
-[[package]]
-name = "futures-task"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f90f7dce0722e95104fcb095585910c0977252f286e354b5e3bd38902cd99988"
-
-[[package]]
-name = "futures-util"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
-dependencies = [
- "futures-channel",
- "futures-core",
- "futures-io",
- "futures-macro",
- "futures-sink",
- "futures-task",
- "memchr",
- "pin-project-lite",
- "pin-utils",
- "slab",
 ]
 
 [[package]]
@@ -2398,17 +2321,13 @@ dependencies = [
 
 [[package]]
 name = "gpca"
-version = "0.1.4"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a3b37576108f2584ab1798dddd5d41b799a3f57d3b34e25d86dc49b435efe39"
+checksum = "8990fc64d090fc4b3400e7df9fdbc3395e531676959e5d0bf1cc11b5f87fa976"
 dependencies = [
  "bytemuck",
- "colorous",
- "futures",
  "image",
  "itertools 0.13.0",
- "kdam",
- "rand",
  "rayon",
  "tokio",
  "wgpu 22.1.0",
@@ -2766,16 +2685,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kdam"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "526586ea01a9a132b5f8d3a60f6d6b41b411550236f5ee057795f20b37316957"
-dependencies = [
- "terminal_size",
- "windows-sys 0.52.0",
-]
-
-[[package]]
 name = "khronos-egl"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3102,13 +3011,15 @@ dependencies = [
 
 [[package]]
 name = "natural"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bevy",
  "bevy_egui",
  "bevy_panorbit_camera",
  "colorous",
  "gpca",
+ "rayon",
+ "tokio",
 ]
 
 [[package]]
@@ -3661,12 +3572,6 @@ name = "pin-project-lite"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bda66fc9667c18cb2758a2ac84d1167245054bcf85d5d1aaa6923f45801bdd02"
-
-[[package]]
-name = "pin-utils"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "piper"
@@ -4369,16 +4274,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "terminal_size"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21bebf2b7c9e0a515f6e0f8c51dc0f8e4696391e6f1ff30379559f8365fb0df7"
-dependencies = [
- "rustix",
- "windows-sys 0.48.0",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4461,9 +4356,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.40.0"
+version = "1.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2b070231665d27ad9ec9b8df639893f46727666c6767db40317fbe920a5d998"
+checksum = "145f3413504347a2be84393cc8a7d2fb4d863b375909ea59f2158261aa258bbb"
 dependencies = [
  "backtrace",
  "bytes",
