@@ -11,10 +11,11 @@ edition = "2021"
 [dependencies]
 bevy_egui = "0.30.0"
 bevy = "0.14.2"
-bevy_panorbit_camera = "0.19.3"
+bevy_panorbit_camera = "0.19.5"
 
-gpca = "0.2.0"
+gpca = "0.2.1"
 colorous = "1.0.14"
 # rand = "0.8.5"
 rayon = "1.10.0"
 tokio = { version = "1.41.0", features = ["full", "rt"] }
+rand = "0.8.5"

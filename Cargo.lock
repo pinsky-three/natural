@@ -885,9 +885,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_panorbit_camera"
-version = "0.19.3"
+version = "0.19.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0aec4ab2ef0d8527c3e85db205f6b0eb3c302f81401dfb7131db425f5fd78d2c"
+checksum = "dacb1375f393411c20584a5ede4eac42b1ea1185ec9d2d93e969c2c6b971daa6"
 dependencies = [
  "bevy",
 ]
@@ -2321,15 +2321,14 @@ dependencies = [
 
 [[package]]
 name = "gpca"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8990fc64d090fc4b3400e7df9fdbc3395e531676959e5d0bf1cc11b5f87fa976"
+checksum = "3861ebeabb99d4fcd79adc616f2205d015b8649bdf2a62c90659b9ee7b67ac83"
 dependencies = [
  "bytemuck",
  "image",
  "itertools 0.13.0",
  "rayon",
- "tokio",
  "wgpu 22.1.0",
 ]
 
@@ -3018,6 +3017,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "colorous",
  "gpca",
+ "rand",
  "rayon",
  "tokio",
 ]

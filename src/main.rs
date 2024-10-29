@@ -17,6 +17,7 @@ use gpca::{
     system::dynamical_system::DynamicalSystem,
     third::wgpu::{create_gpu_device, GpuDevice},
 };
+use rand::{distributions::Uniform, Rng};
 // use rand::Rng;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
@@ -57,9 +58,12 @@ impl CurrentGPCA {
         const STATES: u32 = 5;
         const THRESH: u32 = 3;
 
+        let r_dist = Uniform::new(0, STATES);
+
         let mem = (0..W * H)
             .into_par_iter()
-            .map(|_| DiscreteState::from_state(STATES - 1))
+            .map_init(rand::thread_rng, |rng, _| rng.sample(r_dist))
+            .map(DiscreteState::from_state)
             .collect();
 
         let space = HyperGraphHeap::new_grid(&mem, W, H, ());
@@ -114,8 +118,11 @@ fn ui_example_system(
 
                 // let s = ;
 
+                let r_dist = Uniform::new(0, states);
+
                 context.model.update_space(|mem| {
-                    mem.par_iter_mut().for_each(|x| x.set_state(states - 1));
+                    mem.par_iter_mut()
+                        .for_each(|x| x.set_state(rand::thread_rng().sample(r_dist)));
                 });
 
                 // context.model.set_space(Box::new(HyperGraphHeap::new_grid(
