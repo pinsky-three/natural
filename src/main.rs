@@ -5,8 +5,7 @@ use bevy::{
         render_resource::{Extent3d, TextureDimension},
     },
 };
-
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+// use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use gpca::{
     dynamics::{implementations::cyclic::CyclicAutomaton, local::LocalDynamic},
@@ -17,7 +16,7 @@ use gpca::{
     system::dynamical_system::DynamicalSystem,
     third::wgpu::{create_gpu_device, GpuDevice},
 };
-// use rand::Rng;
+use rand::{self, Rng};
 use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 type MyHyperGraph = HyperGraphHeap<DiscreteState, (), (u32, u32)>;
@@ -33,33 +32,37 @@ struct MainPassCube;
 
 #[derive(Resource)]
 struct GPUContext {
-    device: GpuDevice,
+    // device: Arc<GpuDevice>,
     image_handler: Option<Handle<Image>>,
     material_handler: Option<Handle<StandardMaterial>>,
 }
 
-#[derive(Default, Resource)]
+#[derive(Resource)]
 struct UiState {
-    // label: String,
     ca_states: u32,
     ca_thresh: u32,
-    // painting: Painting,
-    // inverted: bool,
-    // egui_texture_handle: Option<egui::TextureHandle>,
-    // is_window_open: bool,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self {
+            ca_states: 5,
+            ca_thresh: 3,
+        }
+    }
 }
 
 impl CurrentGPCA {
     fn new() -> Self {
-        const W: u32 = 1024;
-        const H: u32 = 1024;
+        const W: u32 = 512;
+        const H: u32 = 512;
 
-        const STATES: u32 = 5;
-        const THRESH: u32 = 3;
+        const STATES: u32 = 10;
+        const THRESH: u32 = 2;
 
         let mem = (0..W * H)
             .into_par_iter()
-            .map(|_| DiscreteState::from_state(STATES - 1))
+            .map(|_| DiscreteState::from_state(rand::thread_rng().gen_range(0..STATES)))
             .collect();
 
         let space = HyperGraphHeap::new_grid(&mem, W, H, ());
@@ -80,54 +83,48 @@ fn main() {
             ..Default::default()
         }))
         .init_resource::<UiState>()
-        .add_plugins(EguiPlugin)
+        // .add_plugins(EguiPlugin)
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, ui_example_system)
+        // .add_systems(Update, ui_example_system)
         // .add_systems(Update, render_image)
         .add_systems(Update, update_visualization)
         .run();
 }
 
-fn ui_example_system(
-    mut contexts: EguiContexts,
-    mut context: ResMut<CurrentGPCA>,
-    mut ui_state: ResMut<UiState>,
-) {
-    egui::Window::new("Cyclic Cellular Automata").show(contexts.ctx_mut(), |ui| {
-        // ui.label("world");
+// fn ui_example_system(
+//     mut contexts: EguiContexts,
+//     mut context: ResMut<CurrentGPCA>,
+//     mut ui_state: ResMut<UiState>,
+// ) {
+//     egui::Window::new("Cyclic Cellular Automata").show(contexts.ctx_mut(), |ui| {
+//         // ui.label("world");
 
-        ui.horizontal(|ui| {
-            ui.label("states");
-            ui.add(egui::Slider::new(&mut ui_state.ca_states, 1..=32));
-        });
+//         ui.horizontal(|ui| {
+//             ui.label("states");
+//             ui.add(egui::Slider::new(&mut ui_state.ca_states, 1..=32));
+//         });
 
-        ui.horizontal(|ui| {
-            ui.label("threshold");
-            ui.add(egui::Slider::new(&mut ui_state.ca_thresh, 1..=8));
-        });
+//         ui.horizontal(|ui| {
+//             ui.label("threshold");
+//             ui.add(egui::Slider::new(&mut ui_state.ca_thresh, 1..=8));
+//         });
 
-        ui.horizontal(|ui| {
-            if ui.button("reset").clicked() {
-                let dynamic = context.model.dynamic() as &dyn LocalDynamic<DiscreteState, ()>;
-                let states = dynamic.states();
+//         ui.horizontal(|ui| {
+//             if ui.button("reset").clicked() {
+//                 let dynamic = context.model.dynamic() as &dyn LocalDynamic<DiscreteState, ()>;
+//                 let states = dynamic.states();
 
-                // let s = ;
+//                 // let s = ;
 
-                context.model.update_space(|mem| {
-                    mem.par_iter_mut().for_each(|x| x.set_state(states - 1));
-                });
-
-                // context.model.set_space(Box::new(HyperGraphHeap::new_grid(
-                //     &DiscreteState::filled_vector(wh, ui_state.ca_states),
-                //     w,
-                //     h,
-                //     (),
-                // )));
-            }
-        });
-    });
-}
+//                 context.model.update_space(|mem| {
+//                     mem.par_iter_mut()
+//                         .for_each(|x| x.set_state(rand::thread_rng().gen_range(0..states)));
+//                 });
+//             }
+//         });
+//     });
+// }
 
 fn update_visualization(
     mut context: ResMut<CurrentGPCA>,
@@ -145,8 +142,10 @@ fn update_visualization(
         )));
     }
 
-    let r = tokio::runtime::Runtime::new().unwrap();
-    r.block_on(context.model.compute_sync_wgpu(&gpu.device));
+    // let r = tokio::runtime::Runtime::new().unwrap();
+    // r.block_on(context.model.compute_sync_wgpu(&gpu.device));
+
+    context.model.compute_sync();
 
     let image = images.get_mut(gpu.image_handler.as_ref().unwrap()).unwrap();
     let dynamic = context.model.dynamic() as &dyn LocalDynamic<DiscreteState, ()>;
@@ -156,7 +155,7 @@ fn update_visualization(
         .model
         .space_state()
         .iter()
-        .map(|x| colorous::VIRIDIS.eval_continuous(x.state() as f64 / states as f64))
+        .map(|x| colorous::TURBO.eval_continuous(x.state() as f64 / states as f64))
         .flat_map(|col| {
             [
                 col.r, // ((v as u32 * 255) / states) as u8,
@@ -244,12 +243,14 @@ fn setup(
         MainPassCube,
     ));
 
-    let r = tokio::runtime::Runtime::new().unwrap();
+    // let runtime = tokio::runtime::Builder::new_current_thread()
+    //     .build()
+    //     .unwrap();
 
-    let device = r.block_on(create_gpu_device());
+    // let device = runtime.block_on(create_gpu_device());
 
     commands.insert_resource(GPUContext {
-        device,
+        // device: Arc::new(device),
         material_handler: Some(material_handle.clone()),
         image_handler: Some(image_handle.clone()),
     });
